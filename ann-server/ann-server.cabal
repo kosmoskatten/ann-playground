@@ -26,6 +26,7 @@ executable ann-server
                      , conduit-combinators
                      , either
                      , fast-logger
+                     , hfann
                      , mtl
                      , resourcet
                      , servant-server

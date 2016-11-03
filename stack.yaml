@@ -7,6 +7,7 @@ resolver: lts-7.7
 # Local packages, usually specified by relative directory name
 packages:
     - 'ann-server'
+    - '../hfann'
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps: []
 

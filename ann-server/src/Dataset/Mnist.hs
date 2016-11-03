@@ -6,6 +6,7 @@ module Dataset.Mnist
     , showError
     ) where
 
+import AI.Fann (Fann, InputData, OutputData, train)
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Error.Class (MonadError)
@@ -20,10 +21,6 @@ import Data.Csv.Conduit (CsvParseError, fromCsv)
 import Data.ByteString.Char8 as BS
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Storable as SVec
-
--- TODO: Should come from hfann
-type InputData  = SVec.Vector Float
-type OutputData = SVec.Vector Float
 
 newtype Bundle = Bundle (InputData, OutputData)
     deriving Show
@@ -41,20 +38,19 @@ instance FromRecord Bundle where
         | otherwise              = fail "CSV line length error (shall be 785)"
 
 trainingPipeline :: (MonadError CsvParseError m, MonadResource m)
-                 => FilePath -> m()
-trainingPipeline file =
-    (sourceFileBS file =$= fromCsv defaultDecodeOptions NoHeader) $$ sinkBundles
+                 => FilePath -> Fann -> m()
+trainingPipeline file fann =
+    (sourceFileBS file =$= fromCsv defaultDecodeOptions NoHeader)
+        $$ trainNetwork fann
+
+trainNetwork :: (MonadIO m) => Fann -> Sink Bundle m ()
+trainNetwork fann =
+    awaitForever $ \(Bundle (input, output)) -> do
+        liftIO $ train fann input output
+        trainNetwork fann
 
 showError :: CsvParseError -> String
 showError _ = "baah"
-
-sinkBundles :: (MonadIO m) => Sink Bundle m ()
-sinkBundles =
-    awaitForever $ \b -> do
-        liftIO $ Prelude.putStrLn "---"
-        liftIO $ Prelude.print b
-        liftIO $ Prelude.putStrLn "---"
-        sinkBundles
 
 parseInput :: Vec.Vector BS.ByteString -> Parser (Vec.Vector Float)
 parseInput = Vec.mapM parseField
