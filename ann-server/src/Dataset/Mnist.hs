@@ -10,11 +10,13 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Resource (MonadResource)
-import Data.Csv.Conduit
-import Data.Conduit
+import Data.Conduit (Sink, ($$), (=$=), awaitForever)
 import Data.Conduit.Combinators (sourceFileBS)
+import Data.Csv ( FromRecord (..), HasHeader (NoHeader), Parser
+                , defaultDecodeOptions, parseField
+                )
+import Data.Csv.Conduit (CsvParseError, fromCsv)
 
-import Data.Csv
 import Data.ByteString.Char8 as BS
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Storable as SVec

@@ -1,14 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Main where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Either (bimapEitherT, runEitherT)
-import Control.Monad.Trans.Resource (MonadResource, runResourceT)
-import Data.Csv
-import Data.Csv.Conduit
-import Data.Conduit
-import Data.Conduit.Combinators
+import Control.Monad.Trans.Resource (runResourceT)
 
 import Dataset.Mnist
 
