@@ -25,7 +25,10 @@ executable ann-server
                      , cassava-conduit
                      , conduit
                      , conduit-combinators
+                     , either
                      , fast-logger
+                     , mtl
+                     , resourcet
                      , servant-server
                      , text
                      , vector

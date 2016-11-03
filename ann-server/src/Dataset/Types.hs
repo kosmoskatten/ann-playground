@@ -11,3 +11,4 @@ type InputData  = SVec.Vector Float
 type OutputData = SVec.Vector Float
 
 newtype Bundle = Bundle (InputData, OutputData)
+    deriving Show
