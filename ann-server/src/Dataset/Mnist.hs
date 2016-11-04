@@ -3,20 +3,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Dataset.Mnist
     ( trainingPipeline
+    , testPipeline
     , showError
     ) where
 
-import AI.Fann (Fann, InputData, OutputData, train)
+import AI.Fann (Fann, InputData, OutputData, run, train)
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Resource (MonadResource)
-import Data.Conduit (Sink, ($$), (=$=), awaitForever)
+import Data.Conduit (Sink, ($$), (=$=), await, awaitForever)
 import Data.Conduit.Combinators (sourceFileBS)
 import Data.Csv ( FromRecord (..), HasHeader (NoHeader), Parser
                 , defaultDecodeOptions, parseField
                 )
 import Data.Csv.Conduit (CsvParseError, fromCsv)
+import Text.Printf (printf)
 
 import Data.ByteString.Char8 as BS
 import qualified Data.Vector as Vec
@@ -49,8 +51,37 @@ trainNetwork fann =
         liftIO $ train fann input output
         trainNetwork fann
 
+testPipeline :: (MonadError CsvParseError m, MonadResource m)
+             => FilePath -> Fann -> m (Int, Int)
+testPipeline file fann =
+    (sourceFileBS file =$= fromCsv defaultDecodeOptions NoHeader)
+        $$ testNetwork fann
+
+testNetwork :: (MonadIO m) => Fann -> Sink Bundle m (Int, Int)
+testNetwork fann = go (0, 0)
+  where
+    go :: (MonadIO m) => (Int, Int) -> Sink Bundle m (Int, Int)
+    go cnt = maybe (return cnt) (handleBundle cnt) =<< await
+
+    handleBundle :: (MonadIO m) => (Int, Int) -> Bundle
+                 -> Sink Bundle m (Int, Int)
+    handleBundle (total, err) (Bundle (input, expect)) = do
+        output <- liftIO $ run fann input
+        let expectD = identifyDigit expect
+            outputD = identifyDigit output
+        if expectD /= outputD
+            then do
+                --liftIO $ printf "Err: exp %s <-> out %s\n"
+                --                (show expectD) (show outputD)
+                --liftIO $ printf "==> %s\n" (show output)
+                (go (total + 1, err + 1))
+            else (go (total + 1, err))
+
 showError :: CsvParseError -> String
 showError _ = "baah"
+
+identifyDigit :: OutputData -> Maybe Int
+identifyDigit = SVec.findIndex (\x -> x > 0.5)
 
 parseInput :: Vec.Vector BS.ByteString -> Parser (Vec.Vector Float)
 parseInput = Vec.mapM parseField
